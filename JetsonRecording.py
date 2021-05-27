@@ -3,6 +3,7 @@ import jetson.utils
 
 import argparse
 import sys
+import cv2
 
 from datetime import datetime
 import os
@@ -23,7 +24,8 @@ time_stamp = now.strftime("%Y-%m-%d_%H_%M_%S")
 output = jetson.utils.videoOutput(os.path.join(dir_original, time_stamp + '.avi'))
 
 # run image detection
-print("")
+print("Image Detection has started!")
+print(time_stamp)
 confidence = 0
 while confidence < 1:
     # capture the next image
@@ -41,8 +43,9 @@ while confidence < 1:
             if counter == 'person':
                 confidence = detection.Confidence
                 print("Detected a person! Confidence is {:f}".format(confidence))
-                jetson.utils.cudaDeviceSynchronize() # Allows to take both video and photo at same time. Comment out if this doesn't work
-                jetson.utils.saveImageRGBA(os.path.join(dir_original, time_stamp + '.jpg')) # saves image the output folder
+                #jetson.utils.cudaDeviceSynchronize() # Allows to take both video and photo at same time. Comment out if this doesn't work
+                saveimg = jetson.utils.cudaToNumpy(img) #Saves only the timestamp that was created in beginning. May need to update later
+                cv2.imwrite(os.path.join(dir_original, time_stamp + '.jpg'),saveimg) # saves image the output folder
 
 	# render the image
     output.Render(img)

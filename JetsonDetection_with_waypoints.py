@@ -11,7 +11,7 @@ import math
 
 from datetime import datetime
 
-from Defs import *
+from Defs.PixHawk import *
 
 #----------------------------------------------KEEP IT THERE FOR REFERENCE
 #connection_string = '/dev/ttyACM0'	#Establishing Connection With Flight Controller
@@ -21,8 +21,6 @@ from Defs import *
 #cmds.wait_ready()
 #waypoint1 = dk.LocationGlobalRelative(cmds[0].x, cmds[0].y, 3)  # Destination point 1
 #----------------------------------------------
-
-#END of definitions!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 import jetson.inference
 import jetson.utils
@@ -110,7 +108,8 @@ while confidence < 0.5 and distance_wp > 2:
             if counter == 'person':
                 confidence = detection.Confidence
                 print("Detected a person! Confidence is {:f}".format(confidence))
-                #jetson.utils.saveImageRGBA(os.path.join(dir_original, time_stamp + '.jpg')) # saves image the output folder
+                saveimg = jetson.utils.cudaToNumpy(img) #Saves only the timestamp that was created in beginning. May need to update later
+                cv2.imwrite(os.path.join(dir_original, time_stamp + '.jpg'),saveimg) # saves image the output folder
 
 
 	# render the image
