@@ -11,7 +11,7 @@ import math
 
 from datetime import datetime
 
-from Defs.PixHawk import *
+from Defs.Serial import *
 
 #----------------------------------------------KEEP IT THERE FOR REFERENCE
 #connection_string = '/dev/ttyACM0'	#Establishing Connection With Flight Controller
@@ -21,6 +21,19 @@ from Defs.PixHawk import *
 #cmds.wait_ready()
 #waypoint1 = dk.LocationGlobalRelative(cmds[0].x, cmds[0].y, 3)  # Destination point 1
 #----------------------------------------------
+
+# Before initializing, wait for a press of a button
+print("Now waiting to start mission...")
+btn="off"
+while btn !="on": #if incoming bytes are waiting to be read from the serial input buffer
+    btn=serialread()
+
+if btn == "on":
+    ser.write("START\\n".encode())
+print("Mission has started!  Intializing drone...")
+
+# starting up pixhawk dependencies
+from Defs.PixHawk import *
 
 import jetson.inference
 import jetson.utils
@@ -40,14 +53,6 @@ output = jetson.utils.videoOutput(os.path.join(dir_original, time_stamp + '.avi'
 # load the object detection network
 net = jetson.inference.detectNet()
 
-# Before initializing, wait for a press of a button
-print("Now waiting for Button Press...")
-btn="off"
-while btn !="on": #if incoming bytes are waiting to be read from the serial input buffer
-    btn=serialread()
-
-print("Button has been pressed!  Intializing drone...")
-
 # INITIALIZING DRONE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 connection_string = '/dev/ttyACM0'	#Establishing Connection With PIXHAWK
 vehicle = dk.connect(connection_string, wait_ready=True, baud=115200)# PIXHAWK is PLUGGED to NUC (RPi too?) VIA USB
@@ -65,10 +70,12 @@ missionwp = readmission('Spadra_Farm_Search_WPS.txt')
 import_mission_filename= 'Spadra_Farm_Search_WPS.txt'
 
 print ("\nUpload mission from a file: %s" % import_mission_filename)
+
 # Clear existing mission from vehicle
 print ("Clear mission")
 cmds = vehicle.commands
 cmds.clear()
+
 # Add new mission to vehicle
 for command in missionwp:
     cmds.add(command)
