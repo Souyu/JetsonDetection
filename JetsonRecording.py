@@ -15,13 +15,13 @@ input = jetson.utils.videoSource()
 #use for if need to read from a recording
 #input = jetson.utils.videoSource('/home/souyu/Desktop/TargetRecVideos/myvideo.avi')
 
-#output = jetson.utils.videoOutput("rtp://192.168.79.51:1234") # use for remote viewing, else comment out
+output = jetson.utils.videoOutput("rtp://192.168.133.51:1234") # use for remote viewing, else comment out
 
 #record to avi
 dir_original ='/home/souyu/Desktop/TargetRecRecording'
 now = datetime.now()
 time_stamp = now.strftime("%Y-%m-%d_%H_%M_%S")
-output = jetson.utils.videoOutput(os.path.join(dir_original, time_stamp + '.avi'))
+#output = jetson.utils.videoOutput(os.path.join(dir_original, time_stamp + '.avi'))
 
 # run image detection
 print("Image Detection has started!")

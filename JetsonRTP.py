@@ -13,8 +13,8 @@ import os
 
 
 # Video Device
-input = jetson.utils.videoSource("v4l2:///dev/video1", [ '–input-width=1920', '–input-height=1080, -input-rtsp-latency=0']) #USB camera
-#input = jetson.utils.videoSource("csi://0") # MIPI CSI camera
+#input = jetson.utils.videoSource("v4l2:///dev/video1", [ '–input-width=1920', '–input-height=1080, -input-rtsp-latency=0']) #USB camera
+input = jetson.utils.videoSource("csi://0") # MIPI CSI camera
 #input = jetson.utils.videoSource("csi://0", [ '–input-width=1920', '–input-height=1080']) #MIPI camera with width and height adjusted
 
 # Testing IR Camera CURRENTLY DOESN'T WORK.
@@ -32,7 +32,7 @@ input = jetson.utils.videoSource("v4l2:///dev/video1", [ '–input-width=1920', 
 #use for if need to read from a recording
 #input = jetson.utils.videoSource('/home/souyu/Desktop/TargetRecVideos/myvideo.avi')
 
-output = jetson.utils.videoOutput("rtp://192.168.103.51:1234") # use for remote viewing, else comment out
+output = jetson.utils.videoOutput("rtp://192.168.133.51:1234") # use for remote viewing, else comment out
 
 print("Jetson Camera RTP stream started!")
 # run image detection
