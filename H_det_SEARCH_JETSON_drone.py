@@ -115,7 +115,7 @@ ser = serial.Serial(
     timeout=1   
 )
 
-#Testing Edit..
+
 
 # Before initializing, wait for a press of a button
 print("Now waiting for Button Press...")
