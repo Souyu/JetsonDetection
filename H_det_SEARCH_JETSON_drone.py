@@ -11,8 +11,6 @@ import os
 from datetime import datetime
 
 
-#Testing Git Edit
-
 def arm_and_takeoff(aTargetAltitude):
     print("Basic pre-arm checks")
     while not vehicle.is_armable:
