@@ -7,6 +7,7 @@ import time
 import dronekit as dk
 from pymavlink import mavutil
 import os
+import math
 
 from datetime import datetime
 
@@ -69,6 +70,15 @@ def goto_position_target_local_ned(north, east, down): #THIS FUNCTION IS NOT NEE
 #cmds.wait_ready()
 #waypoint1 = dk.LocationGlobalRelative(cmds[0].x, cmds[0].y, 3)  # Destination point 1
 #----------------------------------------------
+
+#calculate the distance from waypoint
+def distance_to_waypoint (clocation, nwaypoint): # arguments are current location and waypoint
+    R = 6371000 #radius of Earth in meters
+    x = math.pi*(nwaypoint[1]-clocation[1])/180*math.cos(math.pi/180*(clocation[0]+nwaypoint[0])/2)
+    X = R*x
+    y = math.pi/180*(nwaypoint[0]-clocation[0])
+    Y = R*y
+    return math.sqrt(X**2+Y**2)
 
 #END of definitions!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -137,10 +147,12 @@ vehicle.simple_goto(waypoint1)#trying to reach 1st waypoint
 #time.sleep(40)															
 #----------------------------------------------
 
+# establish waypoint distance
+distance_wp = 5
 
-# run image detection with confidence of 30% to detect if its a human or not
+# run image detection with confidence of 30% to detect if its a human or not, and use waypoint distance to calculate if its close to waypoint and must return home
 confidence = 0
-while confidence < 0.5:
+while confidence < 0.5 or distance_wp > 2:
     # capture the next image
     img = input.Capture()
     
@@ -160,8 +172,9 @@ while confidence < 0.5:
 	# render the image
     output.Render(img)
 
-#    if not input.IsStreaming() or not output.IsStreaming():
-#        break
+    current_loc = [vehicle.location.global_relative_frame.lat, vehicle.location.global_relative_frame.lon] #current coordinates of the drone
+    distance_wp = distance_to_waypoint(current_loc, waypoint1[0:2]) #distance to next waypoint
+
 
 print("Found person with high confidence! Breaking Loop.")
 # STOP Flying --------------------------------
