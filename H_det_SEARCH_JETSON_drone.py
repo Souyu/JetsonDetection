@@ -71,7 +71,7 @@ def goto_position_target_local_ned(north, east, down): #THIS FUNCTION IS NOT NEE
 #waypoint1 = dk.LocationGlobalRelative(cmds[0].x, cmds[0].y, 3)  # Destination point 1
 #----------------------------------------------
 
-#calculate the distance from waypoint
+# calculate the distance from waypoint
 def distance_to_waypoint (clocation, nwaypoint): # arguments are current location and waypoint
     R = 6371000 #radius of Earth in meters
     x = math.pi*(nwaypoint[1]-clocation[1])/180*math.cos(math.pi/180*(clocation[0]+nwaypoint[0])/2)
@@ -119,17 +119,6 @@ output = jetson.utils.videoOutput(os.path.join(dir_original, time_stamp + '.avi'
 # load the object detection network
 net = jetson.inference.detectNet()
 
-
-# process frames until the user exits
-
-#Setting up GPIO
-#GPIO.setmode(GPIO.BCM)
-#GPIO.setup(18, GPIO.OUT)
-#p = GPIO.PWM(18, 50)
-#p.start(2.5)
-#time.sleep(1)
-...
-
 #setting up xbee communication
 #GPIO.setwarnings(False)
 ser = serial.Serial(
@@ -141,8 +130,6 @@ ser = serial.Serial(
     bytesize=serial.EIGHTBITS,
     timeout=1   
 )
-
-
 
 # Before initializing, wait for a press of a button
 print("Now waiting for Button Press...")
@@ -161,7 +148,7 @@ waypoint1 = dk.LocationGlobalRelative(cmds[0].x, cmds[0].y, 5)
 
 arm_and_takeoff(10)
 #time.sleep(5)
-vehicle.airspeed = 1 # set drone speed to be used with simple_goto
+vehicle.airspeed = 2 # set drone speed to be used with simple_goto
 vehicle.simple_goto(waypoint1)#trying to reach 1st waypoint
 #time.sleep(40)															
 #----------------------------------------------
@@ -171,7 +158,7 @@ distance_wp = 5
 
 # run image detection with confidence of 30% to detect if its a human or not, and use waypoint distance to calculate if its close to waypoint and must return home
 confidence = 0
-while confidence < 0.5 or distance_wp > 2:
+while confidence < 0.5 and distance_wp > 2:
     # capture the next image
     img = input.Capture()
     
@@ -186,9 +173,8 @@ while confidence < 0.5 or distance_wp > 2:
             if counter == 'person':
                 confidence = detection.Confidence
                 print("Detected a person! Confidence is {:f}".format(confidence))
-                jetson.utils.saveImageRGBA(os.path.join(dir_original, time_stamp + '.avi')) #Saves image the output folder.
-
-
+                jetson.utils.cudaDeviceSynchronize() # Allows to take both video and photo at same time. Comment out if this doesn't work
+                jetson.utils.saveImageRGBA(os.path.join(dir_original, time_stamp + '.jpg')) # saves image the output folder
 
 	# render the image
     output.Render(img)
@@ -213,7 +199,7 @@ ser.write(coords_to_gcs.encode())
 vehicle.mode    = dk.VehicleMode("RTL")
 
 # WHILE LOOP TO CONTINUE RECORDING
-while vehicle.armed():
+while vehicle.armed:
     # capture the next image
     img = input.Capture()
     # detect objects in the image (with overlay)

@@ -6,14 +6,27 @@ import jetson.utils
 import argparse
 import sys
 
+import cv2
+
 from datetime import datetime
 import os
 
 
 # Video Device
-#input = jetson.utils.videoSource("v4l2:///dev/video0") #USB camera
+#input = jetson.utils.videoSource("v4l2:///dev/video0", [ '–input-width=320', '–input-height=256']) #USB camera
 #input = jetson.utils.videoSource("csi://0") # MIPI camera
-input = jetson.utils.videoSource("csi://0", [ '–input-width=1920', '–input-height=1080']) #MIPI camera with width and height adjusted
+#input = jetson.utils.videoSource("csi://0", [ '–input-width=1920', '–input-height=1080']) #MIPI camera with width and height adjusted
+
+gst_str = ('nvarguscamerasrc !' 
+    'video/x-raw(memory:NVMM), '
+    'width=(int)320, height=(int)256, '
+    'format=(string)NV12, framerate=30/1 ! '
+    'nvvidconv ! '
+    'video/x-raw, format=(string)BGRx ! '
+    'videoconvert ! '
+    'video/x-raw, format=(string)RGB ! appsink')
+
+input = cv2.VideoCapture(gst_str, cv2.CAP_GSTREAMER)
 
 #use for if need to read from a recording
 #input = jetson.utils.videoSource('/home/souyu/Desktop/TargetRecVideos/myvideo.avi')
@@ -25,10 +38,12 @@ print("Jetson Camera RTP stream started!")
 confidence = 0
 while confidence < 1:
     # capture the next image
-    img = input.Capture()
+	#img = input.Capture()
+	img = input.read()
     
-	# render the image
-    output.Render(img)
+   #render the image
+   ##output.Render(img)
+	cv2.imshow("cam", img)
 
 	# update the title bar
 	#output.SetStatus("{:s} | Network {:.0f} FPS".format(opt.network, net.GetNetworkFPS()))
@@ -37,5 +52,5 @@ while confidence < 1:
 	#net.PrintProfilerTimes()
 
 	# exit on input/output EOS
-    if not input.IsStreaming() or not output.IsStreaming():
-        break
+	if not input.IsStreaming() or not output.IsStreaming():
+		break

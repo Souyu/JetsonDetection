@@ -40,6 +40,8 @@ while confidence < 1:
             if counter == 'person':
                 confidence = detection.Confidence
                 print("Detected a person! Confidence is {:f}".format(confidence))
+                jetson.utils.cudaDeviceSynchronize() # Allows to take both video and photo at same time. Comment out if this doesn't work
+                jetson.utils.saveImageRGBA(os.path.join(dir_original, time_stamp + '.jpg')) # saves image the output folder
 
 	# render the image
     output.Render(img)
