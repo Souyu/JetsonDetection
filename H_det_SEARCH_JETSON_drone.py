@@ -80,6 +80,25 @@ def distance_to_waypoint (clocation, nwaypoint): # arguments are current locatio
     Y = R*y
     return math.sqrt(X**2+Y**2)
 
+# allows reading the serial fully and avoid missing any bytes
+def serialread():
+    time.sleep(.001)                    # delay of 1ms
+    val = ser.readline()                # read complete line from serial output
+    while not '\\n'in str(val):         # check if full data is received. 
+        # This loop is entered only if serial read value doesn't contain \n
+        # which indicates end of a sentence. 
+        # str(val) - val is byte where string operation to check `\\n` 
+        # can't be performed
+        time.sleep(.001)                # delay of 1ms 
+        temp = ser.readline()           # check for serial output.
+        if not not temp.decode():       # if temp is not empty.
+            val = (val.decode()+temp.decode()).encode()
+            # requrired to decode, sum, then encode because
+            # long values might require multiple passes
+    val = val.decode()                  # decoding from bytes
+    val = val.strip()                   # stripping leading and trailing spaces.
+    return val
+
 #END of definitions!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 import jetson.inference
@@ -129,7 +148,7 @@ ser = serial.Serial(
 print("Now waiting for Button Press...")
 btn="off"
 while btn !="on": #if incoming bytes are waiting to be read from the serial input buffer
-        btn=ser.read(5).decode()
+    btn=serialread()
 
 # INITIALIZING DRONE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 connection_string = '/dev/ttyACM0'	#Establishing Connection With PIXHAWK
@@ -167,6 +186,8 @@ while confidence < 0.5 or distance_wp > 2:
             if counter == 'person':
                 confidence = detection.Confidence
                 print("Detected a person! Confidence is {:f}".format(confidence))
+                jetson.utils.saveImageRGBA(os.path.join(dir_original, time_stamp + '.avi')) #Saves image the output folder.
+
 
 
 	# render the image
