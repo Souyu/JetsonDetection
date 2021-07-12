@@ -205,9 +205,9 @@ time.sleep(3) #for 3 seconds
 # READ CURRENT COORDINATES FROM PIXHAWK-------------------
 lat = vehicle.location.global_relative_frame.lat  # get the current latitude
 lon = vehicle.location.global_relative_frame.lon  # get the current longitude
-coords = str(lat) + " " + str(lon)
+coords_to_gcs = "GCS" + " " + str(lat) + " " + str(lon)
 # TRANSMIT CURRENT COORDINATES TO RESCUE DR -------------- 
-ser.write(coords.encode())
+ser.write(coords_to_gcs.encode())
 
 # RETURN HOME CODE ----------------------------
 vehicle.mode    = dk.VehicleMode("RTL")
