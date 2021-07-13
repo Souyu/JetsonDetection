@@ -80,8 +80,9 @@ def distance_to_waypoint (clocation, nwaypoint): # arguments are current locatio
     Y = R*y
     return math.sqrt(X**2+Y**2)
 
-# allows reading the serial fully and avoid missing any bytes
+# allows reading the serial fully and avoid missing any bytes. *** MUST USE \n AT THE END OF LINE ***
 def serialread():
+    t_end = time.time() + 4             #set timer of 4 seconds
     time.sleep(.001)                    # delay of 1ms
     val = ser.readline()                # read complete line from serial output
     while not '\\n'in str(val):         # check if full data is received. 
@@ -95,6 +96,8 @@ def serialread():
             val = (val.decode()+temp.decode()).encode()
             # requrired to decode, sum, then encode because
             # long values might require multiple passes
+        elif time.time() < t_end:       # break loop if alloted time for serial reading is passed.
+            break
     val = val.decode()                  # decoding from bytes
     val = val.strip()                   # stripping leading and trailing spaces.
     return val
@@ -173,14 +176,14 @@ while confidence < 0.5 and distance_wp > 2:
             if counter == 'person':
                 confidence = detection.Confidence
                 print("Detected a person! Confidence is {:f}".format(confidence))
-                jetson.utils.cudaDeviceSynchronize() # Allows to take both video and photo at same time. Comment out if this doesn't work
                 jetson.utils.saveImageRGBA(os.path.join(dir_original, time_stamp + '.jpg')) # saves image the output folder
+
 
 	# render the image
     output.Render(img)
 
     current_loc = [vehicle.location.global_relative_frame.lat, vehicle.location.global_relative_frame.lon] #current coordinates of the drone
-    distance_wp = distance_to_waypoint(current_loc, waypoint1[0:2]) #distance to next waypoint
+    distance_wp = distance_to_waypoint(current_loc, [waypoint1.lat, waypoint1.lon]) #distance to next waypoint
 
 
 print("Found person with high confidence! Breaking Loop.")
