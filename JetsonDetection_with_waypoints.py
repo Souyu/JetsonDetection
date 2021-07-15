@@ -80,6 +80,36 @@ def distance_to_waypoint (clocation, nwaypoint): # arguments are current locatio
     Y = R*y
     return math.sqrt(X**2+Y**2)
 
+# reads waypoints from mission planner
+def readmission(aFileName):
+    print ("Reading mission from file: %s\n" % aFileName)
+    cmds = vehicle.commands
+    missionlist=[]
+    with open(aFileName) as f:
+        for k, line in enumerate(f):
+            if k==0:
+                if not line.startswith('QGC WPL 110'):
+                    raise Exception('File is not supported WP version')
+            else:
+                linearray=line.split('\t')
+                ln_index=int(linearray[0])
+                ln_currentwp=int(linearray[1])
+                ln_frame=int(linearray[2])
+                ln_command=int(linearray[3])
+                ln_param1=float(linearray[4])
+                ln_param2=float(linearray[5])
+                ln_param3=float(linearray[6])
+                ln_param4=float(linearray[7])
+                ln_param5=float(linearray[8])
+                ln_param6=float(linearray[9])
+                ln_param7=float(linearray[10])
+                #ln_autocontinue=int(linearray[10].strip())
+                cmd = dk.Command( 0, 0, 0, ln_frame, ln_command, ln_currentwp, 1,\
+                                  ln_param1,ln_param2, ln_param3, ln_param4, ln_param5,\
+                                  ln_param6, ln_param7) #ln_autocontinue,
+                missionlist.append(cmd)
+    return missionlist
+
 # allows reading the serial fully and avoid missing any bytes. *** MUST USE \n AT THE END OF LINE ***
 def serialread():
     t_end = time.time() + 4             #set timer of 4 seconds
@@ -141,19 +171,43 @@ while btn !="on": #if incoming bytes are waiting to be read from the serial inpu
     btn=serialread()
 
 # INITIALIZING DRONE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-connection_string = '/dev/ttyACM0'	#Establishing Connection With PIXHAWK
-vehicle = dk.connect(connection_string, wait_ready=True, baud=115200)# PIXHAWK is PLUGGED to NUC (RPi too?) VIA USB
+#connection_string = '/dev/ttyACM0'	#Establishing Connection With PIXHAWK
+#vehicle = dk.connect(connection_string, wait_ready=True, baud=115200)# PIXHAWK is PLUGGED to NUC (RPi too?) VIA USB
+parser= argparse.ArgumentParser(description= 'commands')
+parser.add_argument('--connect')
+args=parser.parse_args()
+connection_string= args.connect
+
+print("Connection to the vehicle on %s" %connection_string)
+
+vehicle= dk.connect(connection_string, wait_ready=True)
+
+# uploading mission waypoint from text
+missionwp = readmission('Spadra_Farm_Search_WPS.txt')
+import_mission_filename= 'Spadra_Farm_Search_WPS.txt'
+
+print ("\nUpload mission from a file: %s" % import_mission_filename)
+# Clear existing mission from vehicle
+print ("Clear mission")
 cmds = vehicle.commands
-cmds.download()
+cmds.clear()
+# Add new mission to vehicle
+for command in missionwp:
+    cmds.add(command)
+print ("Upload mission")
+cmds.upload()
+print(import_mission_filename)
+
+cmds = vehicle.commands
 cmds.wait_ready()
 
-waypoint1 = dk.LocationGlobalRelative(cmds[0].x, cmds[0].y, 5)  
+# Code for Flight 
+arm_and_takeoff(cmds[0].z)
+vehicle.parameters['WPNAV_RADIUS'] = 100
+vehicle.parameters['WPNAV_SPEED'] = 200 #sets horizontal speed to 200 cm/s
 
-arm_and_takeoff(10)
-#time.sleep(5)
-vehicle.airspeed = 2 # set drone speed to be used with simple_goto
-vehicle.simple_goto(waypoint1)#trying to reach 1st waypoint
-#time.sleep(40)															
+vehicle.mode = dk.VehicleMode("AUTO") 
+
 #----------------------------------------------
 
 # establish waypoint distance
@@ -182,9 +236,16 @@ while confidence < 0.5 and distance_wp > 2:
 	# render the image
     output.Render(img)
 
-    current_loc = [vehicle.location.global_relative_frame.lat, vehicle.location.global_relative_frame.lon] #current coordinates of the drone
-    distance_wp = distance_to_waypoint(current_loc, [waypoint1.lat, waypoint1.lon]) #distance to next waypoint
+    nextwaypoint = vehicle.commands.next
 
+    if nextwaypoint == len(cmds):
+        print("Going to waypoint {}".format(nextwaypoint))
+        current_loc = [vehicle.location.global_relative_frame.lat, vehicle.location.global_relative_frame.lon]
+        waypoint_last = dk.LocationGlobalRelative(cmds[len(cmds)-1].x, cmds[len(cmds)-1].y, cmds[len(cmds)-1].z)
+        distance_wp = distance_to_waypoint(current_loc, [waypoint_last.lat, waypoint_last.lon])
+
+    #current_loc = [vehicle.location.global_relative_frame.lat, vehicle.location.global_relative_frame.lon] #current coordinates of the drone
+    #distance_wp = distance_to_waypoint(current_loc, [waypoint1.lat, waypoint1.lon]) #distance to next waypoint
 
 if confidence > 0.5:
     print("Found person with high confidence! Breaking Loop.")
@@ -202,7 +263,17 @@ coords_to_gcs = "GCS" + " " + str(lat) + " " + str(lon)
 ser.write(coords_to_gcs.encode())
 
 # RETURN HOME CODE ----------------------------
-vehicle.mode    = dk.VehicleMode("RTL")
+#set RTL_alt to something safe for two drones
+vehicle.parameters['RTL_ALT'] = 0 #makes vehicle return to home at current altitude
+print ("\nSet Vehicle.mode = RTL (currently: %s)" % vehicle.mode.name) 
+vehicle.mode = dk.VehicleMode('RTL')
+while vehicle.mode.name != 'RTL':
+    print (" Waiting for changing mode")
+    time.sleep(1)
+print ("Mode: %s" % vehicle.mode.name)
+print("Returning Home")
+# vehicle.mode = dk.VehicleMode("RTL") 
+print("Going Home")
 
 # WHILE LOOP TO CONTINUE RECORDING
 while vehicle.armed:

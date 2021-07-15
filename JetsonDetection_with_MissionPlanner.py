@@ -147,13 +147,11 @@ cmds = vehicle.commands
 cmds.download()
 cmds.wait_ready()
 
-waypoint1 = dk.LocationGlobalRelative(cmds[0].x, cmds[0].y, 5)  
+# Code for Flight 
+arm_and_takeoff(cmds[0].z)
+vehicle.parameters['WPNAV_SPEED'] = 200 #sets horizontal speed to 200 cm/s
+vehicle.mode = dk.VehicleMode("AUTO") 	
 
-arm_and_takeoff(10)
-#time.sleep(5)
-vehicle.airspeed = 2 # set drone speed to be used with simple_goto
-vehicle.simple_goto(waypoint1)#trying to reach 1st waypoint
-#time.sleep(40)															
 #----------------------------------------------
 
 # establish waypoint distance
@@ -178,12 +176,18 @@ while confidence < 0.5 and distance_wp > 2:
                 print("Detected a person! Confidence is {:f}".format(confidence))
                 jetson.utils.saveImageRGBA(os.path.join(dir_original, time_stamp + '.jpg')) # saves image the output folder
 
+    nextwaypoint = vehicle.commands.next
+    print("Going to waypoint {}".format(nextwaypoint))
+    if nextwaypoint == len(cmds):
+        current_loc = [vehicle.location.global_relative_frame.lat, vehicle.location.global_relative_frame.lon]
+        waypoint_last = dk.LocationGlobalRelative(cmds[len(cmds)-1].x, cmds[len(cmds)-1].y, cmds[len(cmds)-1].z)
+        distance_wp = distance_to_waypoint(current_loc, [waypoint_last.lat, waypoint_last.lon])
 
 	# render the image
     output.Render(img)
 
-    current_loc = [vehicle.location.global_relative_frame.lat, vehicle.location.global_relative_frame.lon] #current coordinates of the drone
-    distance_wp = distance_to_waypoint(current_loc, [waypoint1.lat, waypoint1.lon]) #distance to next waypoint
+    #current_loc = [vehicle.location.global_relative_frame.lat, vehicle.location.global_relative_frame.lon] #current coordinates of the drone
+    #distance_wp = distance_to_waypoint(current_loc, [waypoint1.lat, waypoint1.lon]) #distance to next waypoint
 
 
 if confidence > 0.5:
@@ -202,7 +206,11 @@ coords_to_gcs = "GCS" + " " + str(lat) + " " + str(lon)
 ser.write(coords_to_gcs.encode())
 
 # RETURN HOME CODE ----------------------------
-vehicle.mode    = dk.VehicleMode("RTL")
+#set RTL_alt to something safe for two drones
+vehicle.parameters['RTL_ALT'] = 0 #makes vehicle return to home at current altitude
+print("Returning Home")
+vehicle.mode = dk.VehicleMode("RTL") 
+print("Going Home")
 
 # WHILE LOOP TO CONTINUE RECORDING
 while vehicle.armed:
