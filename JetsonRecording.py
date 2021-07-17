@@ -23,6 +23,7 @@ time_stamp = now.strftime("%Y-%m-%d_%H_%M_%S")
 output = jetson.utils.videoOutput(os.path.join(dir_original, time_stamp + '.avi'))
 
 # run image detection
+print("")
 confidence = 0
 while confidence < 1:
     # capture the next image
