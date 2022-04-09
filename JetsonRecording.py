@@ -15,7 +15,7 @@ input = jetson.utils.videoSource()
 #use for if need to read from a recording
 #input = jetson.utils.videoSource('/home/souyu/Desktop/TargetRecVideos/myvideo.avi')
 
-output = jetson.utils.videoOutput("rtp://192.168.133.51:1234") # use for remote viewing, else comment out
+output = jetson.utils.videoOutput("rtp://192.168.87.48:1234") # use for remote viewing, else comment out
 
 #record to avi
 dir_original ='/home/souyu/Desktop/TargetRecRecording'

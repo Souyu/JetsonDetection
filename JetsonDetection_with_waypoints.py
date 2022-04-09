@@ -1,54 +1,47 @@
 # coding: utf-8
 
-import serial
+
 import cv2
-import numpy as np
 import time
 import dronekit as dk
 from pymavlink import mavutil
 import os
-import math
 
 from datetime import datetime
 
-from Defs.Serial import *
+#Directory
+full_path = os.path.realpath(__file__)
+dir = os.path.dirname(full_path)
 
-#----------------------------------------------KEEP IT THERE FOR REFERENCE
-#connection_string = '/dev/ttyACM0'	#Establishing Connection With Flight Controller
-#vehicle = dk.connect(connection_string, wait_ready=True, baud=115200)
-#cmds = vehicle.commands
-#cmds.download()
-#cmds.wait_ready()
-#waypoint1 = dk.LocationGlobalRelative(cmds[0].x, cmds[0].y, 3)  # Destination point 1
-#----------------------------------------------
+#Mission txt file
+mission_name = 'Spadra_Farm_Search_WPS.txt'
 
 # Before initializing, wait for a press of a button
-print("Now waiting to start mission...")
-btn="off"
-while btn !="on": #if incoming bytes are waiting to be read from the serial input buffer
-    btn=serialread()
+#print("Now waiting for Button Press...")
+#btn="off"
+#while btn !="on": #if incoming bytes are waiting to be read from the serial input buffer
+#    btn=device.read_data()
+#    if btn is not None:
+#        btn = btn.data.decode()
 
-if btn == "on":
-    ser.write("START\\n".encode())
-print("Mission has started!  Intializing drone...")
-
-# starting up pixhawk dependencies
+# starting up dependencies
 from Defs.PixHawk import *
+from Defs.Xbee import *
+
 
 import jetson.inference
 import jetson.utils
 
-import argparse
-import sys
 
 input = jetson.utils.videoSource()
+#input = jetson.utils.videoSource('/dev/video1') #USB camera
 #output = jetson.utils.videoOutput("rtp://192.168.79.51:1234") # use for remote viewing, else comment out
 
-#record to avi with timestamp
+#record to mp4 with timestamp
 dir_original ='/home/souyu/Desktop/TargetRecRecording'
 now = datetime.now()
 time_stamp = now.strftime("%Y-%m-%d_%H_%M_%S")
-output = jetson.utils.videoOutput(os.path.join(dir_original, time_stamp + '.avi'))
+output = jetson.utils.videoOutput(os.path.join(dir_original, time_stamp + '.mp4'))
 
 # load the object detection network
 net = jetson.inference.detectNet()
@@ -65,23 +58,23 @@ print("Connection to the vehicle on %s" %connection_string)
 
 #vehicle= dk.connect(connection_string, wait_ready=True)
 
+#recieving the waypoints from GCS
+recieve_GPS_coord_xbee() 
+
 # uploading mission waypoint from text
-missionwp = readmission('Spadra_Farm_Search_WPS.txt')
-import_mission_filename= 'Spadra_Farm_Search_WPS.txt'
+missionwp = readmission(mission_name)
 
-print ("\nUpload mission from a file: %s" % import_mission_filename)
-
+print ("\nUpload mission from a file: %s" % mission_name)
 # Clear existing mission from vehicle
 print ("Clear mission")
 cmds = vehicle.commands
 cmds.clear()
-
 # Add new mission to vehicle
 for command in missionwp:
     cmds.add(command)
 print ("Upload mission")
 cmds.upload()
-print(import_mission_filename)
+print(mission_name)
 
 cmds = vehicle.commands
 cmds.wait_ready()
@@ -101,6 +94,9 @@ distance_wp = 5
 # run image detection with confidence of 30% to detect if its a human or not, and use waypoint distance to calculate if its close to waypoint and must return home
 confidence = 0
 while confidence < 0.5 and distance_wp > 2:
+    #write GPS to text
+    gpsToText(dir,time_stamp)
+
     # capture the next image
     img = input.Capture()
     
@@ -117,7 +113,6 @@ while confidence < 0.5 and distance_wp > 2:
                 print("Detected a person! Confidence is {:f}".format(confidence))
                 saveimg = jetson.utils.cudaToNumpy(img) #Saves only the timestamp that was created in beginning. May need to update later
                 cv2.imwrite(os.path.join(dir_original, time_stamp + '.jpg'),saveimg) # saves image the output folder
-
 
 	# render the image
     output.Render(img)
@@ -145,7 +140,7 @@ lat = vehicle.location.global_relative_frame.lat  # get the current latitude
 lon = vehicle.location.global_relative_frame.lon  # get the current longitude
 coords_to_gcs = "GCS" + " " + str(lat) + " " + str(lon)
 # TRANSMIT CURRENT COORDINATES TO RESCUE DR -------------- 
-ser.write(coords_to_gcs.encode())
+device.send_data_broadcast(coords_to_gcs)
 
 # RETURN HOME CODE ----------------------------
 #set RTL_alt to something safe for two drones
@@ -162,6 +157,8 @@ print("Going Home")
 
 # WHILE LOOP TO CONTINUE RECORDING
 while vehicle.armed:
+    #GPS to Text
+    gpsToText()
     # capture the next image
     img = input.Capture()
     # detect objects in the image (with overlay)

@@ -74,12 +74,8 @@ def readmission(aFileName):
     print ("Reading mission from file: %s\n" % aFileName)
     cmds = vehicle.commands
     missionlist=[]
-    with open(aFileName) as f:
+    with open(dir+'/'+aFileName) as f:
         for k, line in enumerate(f):
-            if k==0:
-                if not line.startswith('QGC WPL 110'):
-                    raise Exception('File is not supported WP version')
-            else:
                 linearray=line.split('\t')
                 ln_index=int(linearray[0])
                 ln_currentwp=int(linearray[1])
@@ -99,16 +95,15 @@ def readmission(aFileName):
                 missionlist.append(cmd)
     return missionlist
 
-#setting up xbee communication
-#GPIO.setwarnings(False)
-ser = serial.Serial(
-    
-    port='/dev/ttyUSB0',
-    baudrate = 9600,
-    parity=serial.PARITY_NONE,
-    stopbits=serial.STOPBITS_ONE,
-    bytesize=serial.EIGHTBITS,
-    timeout=1   
-)
+def gpsToText(dir_gps,time_stamp):
+    time_milsec = str(round(time.time()*1000.0))
+    # READ CURRENT COORDINATES FROM PIXHAWK-------------------
+    lat = vehicle.location.global_relative_frame.lat  # get the current latitude
+    lon = vehicle.location.global_relative_frame.lon  # get the current longitude
+        #change to .txt for no mission planner
+    out =  open(os.path.join(dir_gps, time_stamp + 'txt'), "a" )
+    out.write(str(lat)+'\t'+str(lon)+'\t'+time_milsec+'\n')
 
 
+    out.close()
+    return None
