@@ -4,6 +4,7 @@ import dronekit as dk
 from pymavlink import mavutil
 import time
 import math
+import os
 
 connection_string = '/dev/ttyACM0'	#Establishing Connection With PIXHAWK
 vehicle = dk.connect(connection_string, wait_ready=True, baud=115200)# PIXHAWK is PLUGGED to NUC (RPi too?) VIA USB
