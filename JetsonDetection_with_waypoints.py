@@ -1,10 +1,6 @@
-# coding: utf-8
-
-
 import cv2
 import time
 import dronekit as dk
-from pymavlink import mavutil
 import os
 
 from datetime import datetime
@@ -59,7 +55,7 @@ print("Connection to the vehicle on %s" %connection_string)
 #vehicle= dk.connect(connection_string, wait_ready=True)
 
 #recieving the waypoints from GCS
-recieve_GPS_coord_xbee() 
+recieve_GPS_coord_xbee(mission_name) 
 
 # uploading mission waypoint from text
 missionwp = readmission(mission_name)
@@ -158,7 +154,7 @@ print("Going Home")
 # WHILE LOOP TO CONTINUE RECORDING
 while vehicle.armed:
     #GPS to Text
-    gpsToText()
+    gpsToText(dir,time_stamp)
     # capture the next image
     img = input.Capture()
     # detect objects in the image (with overlay)

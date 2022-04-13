@@ -1,3 +1,4 @@
+import subprocess
 import jetson.inference
 import jetson.utils
 
@@ -13,19 +14,19 @@ input = jetson.utils.videoSource()
 #use for if need to read from a recording
 #input = jetson.utils.videoSource('/home/souyu/Desktop/TargetRecVideos/myvideo.avi')
 
-output = jetson.utils.videoOutput("rtp://192.168.87.48:1234") # use for remote viewing, else comment out
+#output = jetson.utils.videoOutput("rtp://192.168.87.48:1234") # use for remote viewing, else comment out
 
 #record to avi
-dir_original ='/home/souyu/Desktop/TargetRecRecording'
+dir_original ='/home/souyu/Desktop/TargetImages'
 now = datetime.now()
 time_stamp = now.strftime("%Y-%m-%d_%H_%M_%S")
-#output = jetson.utils.videoOutput(os.path.join(dir_original, time_stamp + '.avi'))
+output = jetson.utils.videoOutput(os.path.join(dir_original, time_stamp + '.mp4'))
 
 # run image detection
 print("Image Detection has started!")
 print(time_stamp)
 confidence = 0
-while confidence < 1:
+while confidence < 0.5:
     # capture the next image
     img = input.Capture()
     
@@ -48,12 +49,7 @@ while confidence < 1:
 	# render the image
     output.Render(img)
 
-	# update the title bar
-	#output.SetStatus("{:s} | Network {:.0f} FPS".format(opt.network, net.GetNetworkFPS()))
-
-	# print out performance infojtop
-	#net.PrintProfilerTimes()
-
-	# exit on input/output EOS
     if not input.IsStreaming() or not output.IsStreaming():
         break
+
+result = subprocess.run(['rclone', 'copy', '/home/souyu/Desktop/TargetImages', 'pomona-uav-drive:jpl_images'])
